@@ -11,10 +11,7 @@ import {
   deleteToken,
   getValidToken,
 } from "./auth/token-manager";
-import type {
-  DailyBalanceStock,
-  DailyBalanceResponse,
-} from "@kiwoom/shared";
+import type { DailyBalanceStock, DailyBalanceResponse } from "@kiwoom/shared";
 
 // dayjs 플러그인 설정
 dayjs.extend(customParseFormat);
@@ -313,6 +310,13 @@ export const appRouter = router({
         }
 
         const data = (await response.json()) as DailyBalanceResponse;
+
+        // 빈 문자열로 채워진 더미 데이터 필터링
+        // 보유 종목이 없을 때 API가 모든 필드를 ""로 채워서 보내는 경우 제거
+        data.day_bal_rt = data.day_bal_rt.filter((stock) => {
+          // stk_cd(종목코드)가 비어있으면 더미 데이터로 판단
+          return stock.stk_cd !== "" && stock.stk_cd.trim() !== "";
+        });
 
         // 응답에 next_key 추가
         if (nextKey) {

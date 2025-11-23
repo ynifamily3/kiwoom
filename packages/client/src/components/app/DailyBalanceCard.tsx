@@ -15,6 +15,7 @@ import { Separator } from "../ui/separator";
 import { Button } from "../ui/button";
 import { Calendar } from "../ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import { Skeleton } from "../ui/skeleton";
 import { CalendarIcon, ChevronDown } from "lucide-react";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
@@ -67,21 +68,6 @@ export function DailyBalanceCard() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>💼 일별잔고수익률</CardTitle>
-        </CardHeader>
-        <CardContent className="py-8">
-          <div className="flex items-center justify-center">
-            <Spinner className="w-8 h-8" />
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
   if (error) {
     return (
       <Card>
@@ -100,10 +86,6 @@ export function DailyBalanceCard() {
     );
   }
 
-  if (!data) {
-    return null;
-  }
-
   const formatNumber = (value: string) => {
     const num = parseFloat(value);
     return num.toLocaleString("ko-KR");
@@ -114,17 +96,24 @@ export function DailyBalanceCard() {
     return `${num >= 0 ? "+" : ""}${num.toFixed(2)}%`;
   };
 
-  const isProfitable = parseFloat(data.tot_prft_rt) >= 0;
+  const isProfitable = data ? parseFloat(data.tot_prft_rt) >= 0 : false;
 
   return (
-    <Card className={isProfitable ? "border-green-200" : "border-red-200"}>
+    <Card className={isProfitable ? "border-green-200" : "border-gray-200"}>
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="text-xl">💼 일별잔고수익률</CardTitle>
-            <CardDescription className="mt-1">
-              기준일: {data.dt.slice(0, 4)}-{data.dt.slice(4, 6)}-
-              {data.dt.slice(6, 8)}
+            <CardDescription className="mt-2">
+              {isLoading ? (
+                <Skeleton className="h-5 w-32" />
+              ) : data ? (
+                <span className="text-sm font-medium">
+                  기준일: {format(new Date(data.dt.slice(0, 4) + "-" + data.dt.slice(4, 6) + "-" + data.dt.slice(6, 8)), "PPP", { locale: ko })}
+                </span>
+              ) : (
+                <span className="text-sm text-muted-foreground">기준일: -</span>
+              )}
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
@@ -150,7 +139,13 @@ export function DailyBalanceCard() {
               variant={isProfitable ? "default" : "destructive"}
               className={isProfitable ? "bg-green-600" : ""}
             >
-              {formatPercent(data.tot_prft_rt)}
+              {isLoading ? (
+                <Skeleton className="h-4 w-12" />
+              ) : data ? (
+                formatPercent(data.tot_prft_rt)
+              ) : (
+                "-"
+              )}
             </Badge>
           </div>
         </div>
@@ -161,13 +156,25 @@ export function DailyBalanceCard() {
           <div>
             <p className="text-sm text-muted-foreground">총 매입가</p>
             <p className="text-lg font-semibold">
-              ₩{formatNumber(data.tot_buy_amt)}
+              {isLoading ? (
+                <Skeleton className="h-7 w-32" />
+              ) : data ? (
+                `₩${formatNumber(data.tot_buy_amt)}`
+              ) : (
+                "-"
+              )}
             </p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">총 평가금액</p>
             <p className="text-lg font-semibold">
-              ₩{formatNumber(data.tot_evlt_amt)}
+              {isLoading ? (
+                <Skeleton className="h-7 w-32" />
+              ) : data ? (
+                `₩${formatNumber(data.tot_evlt_amt)}`
+              ) : (
+                "-"
+              )}
             </p>
           </div>
           <div>
@@ -177,25 +184,51 @@ export function DailyBalanceCard() {
                 isProfitable ? "text-green-600" : "text-red-600"
               }`}
             >
-              {isProfitable ? "+" : ""}₩{formatNumber(data.tot_evltv_prft)}
+              {isLoading ? (
+                <Skeleton className="h-7 w-32" />
+              ) : data ? (
+                `${isProfitable ? "+" : ""}₩${formatNumber(
+                  data.tot_evltv_prft
+                )}`
+              ) : (
+                "-"
+              )}
             </p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">예수금</p>
             <p className="text-lg font-semibold">
-              ₩{formatNumber(data.dbst_bal)}
+              {isLoading ? (
+                <Skeleton className="h-7 w-32" />
+              ) : data ? (
+                `₩${formatNumber(data.dbst_bal)}`
+              ) : (
+                "-"
+              )}
             </p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">추정자산</p>
             <p className="text-lg font-semibold">
-              ₩{formatNumber(data.day_stk_asst)}
+              {isLoading ? (
+                <Skeleton className="h-7 w-32" />
+              ) : data ? (
+                `₩${formatNumber(data.day_stk_asst)}`
+              ) : (
+                "-"
+              )}
             </p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">현금비중</p>
             <p className="text-lg font-semibold">
-              {formatNumber(data.buy_wght)}%
+              {isLoading ? (
+                <Skeleton className="h-7 w-24" />
+              ) : data ? (
+                `${formatNumber(data.buy_wght)}%`
+              ) : (
+                "-"
+              )}
             </p>
           </div>
         </div>
@@ -205,77 +238,101 @@ export function DailyBalanceCard() {
         {/* 보유 종목 목록 */}
         <div>
           <h3 className="text-sm font-semibold mb-3">
-            📊 보유 종목 ({allStocks.length}개)
+            📊 보유 종목 ({isLoading ? "..." : allStocks.length}개)
           </h3>
-          <div className="space-y-2">
-            {allStocks.length === 0 ? (
-              <Alert>
-                <AlertDescription className="text-xs">
-                  보유 종목이 없습니다
-                </AlertDescription>
-              </Alert>
-            ) : (
-              allStocks.map((stock) => {
-                const stockProfit = parseFloat(stock.prft_rt) >= 0;
-                return (
-                  <Card key={stock.stk_cd} className="p-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <p className="font-semibold">{stock.stk_nm}</p>
-                          <Badge variant="outline" className="text-xs">
-                            {stock.stk_cd}
-                          </Badge>
-                        </div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          {formatNumber(stock.rmnd_qty)}주 @ ₩
-                          {formatNumber(stock.buy_uv)}
-                        </div>
+          {isLoading ? (
+            <div className="space-y-2">
+              {[...Array(3)].map((_, i) => (
+                <Card key={i} className="p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <Skeleton className="h-5 w-24" />
+                        <Skeleton className="h-4 w-16" />
                       </div>
-                      <div className="text-right">
-                        <p
-                          className={`font-semibold ${
-                            stockProfit ? "text-green-600" : "text-red-600"
-                          }`}
-                        >
-                          {formatPercent(stock.prft_rt)}
-                        </p>
-                        <p
-                          className={`text-xs ${
-                            stockProfit ? "text-green-600" : "text-red-600"
-                          }`}
-                        >
-                          {stockProfit ? "+" : ""}₩
-                          {formatNumber(stock.evltv_prft)}
-                        </p>
-                      </div>
+                      <Skeleton className="h-4 w-32 mt-1" />
                     </div>
-                  </Card>
-                );
-              })
-            )}
-          </div>
-
-          {/* 더 보기 버튼 */}
-          {nextKey && (
-            <div className="mt-4 flex justify-center">
-              <Button
-                variant="outline"
-                onClick={handleLoadMore}
-                disabled={isLoadingMore}
-              >
-                {isLoadingMore ? (
-                  <>
-                    <Spinner className="w-4 h-4 mr-2" />
-                    로딩 중...
-                  </>
-                ) : (
-                  <>
-                    <ChevronDown className="w-4 h-4 mr-2" />더 보기
-                  </>
-                )}
-              </Button>
+                    <div className="text-right">
+                      <Skeleton className="h-5 w-16 mb-1" />
+                      <Skeleton className="h-4 w-20" />
+                    </div>
+                  </div>
+                </Card>
+              ))}
             </div>
+          ) : (
+            <>
+              <div className="space-y-2">
+                {allStocks.length === 0 ? (
+                  <Alert>
+                    <AlertDescription className="text-xs">
+                      보유 종목이 없습니다
+                    </AlertDescription>
+                  </Alert>
+                ) : (
+                  allStocks.map((stock) => {
+                    const stockProfit = parseFloat(stock.prft_rt) >= 0;
+                    return (
+                      <Card key={stock.stk_cd} className="p-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="font-semibold">{stock.stk_nm}</p>
+                              <Badge variant="outline" className="text-xs">
+                                {stock.stk_cd}
+                              </Badge>
+                            </div>
+                            <div className="text-xs text-muted-foreground mt-1">
+                              {formatNumber(stock.rmnd_qty)}주 @ ₩
+                              {formatNumber(stock.buy_uv)}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p
+                              className={`font-semibold ${
+                                stockProfit ? "text-green-600" : "text-red-600"
+                              }`}
+                            >
+                              {formatPercent(stock.prft_rt)}
+                            </p>
+                            <p
+                              className={`text-xs ${
+                                stockProfit ? "text-green-600" : "text-red-600"
+                              }`}
+                            >
+                              {stockProfit ? "+" : ""}₩
+                              {formatNumber(stock.evltv_prft)}
+                            </p>
+                          </div>
+                        </div>
+                      </Card>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* 더 보기 버튼 */}
+              {nextKey && (
+                <div className="mt-4 flex justify-center">
+                  <Button
+                    variant="outline"
+                    onClick={handleLoadMore}
+                    disabled={isLoadingMore}
+                  >
+                    {isLoadingMore ? (
+                      <>
+                        <Spinner className="w-4 h-4 mr-2" />
+                        로딩 중...
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="w-4 h-4 mr-2" />더 보기
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </CardContent>
