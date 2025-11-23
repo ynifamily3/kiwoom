@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { trpc } from "./lib/trpc";
 import { Button } from "./components/ui/button";
 import { SlidingNumber } from "./components/animate-ui/primitives/texts/sliding-number";
 import {
@@ -11,24 +11,11 @@ import {
   DialogTrigger,
 } from "./components/ui/dialog";
 
-interface HelloResponse {
-  message: string;
-}
-
-const fetchHello = async (): Promise<HelloResponse> => {
-  const res = await fetch("/api/hello");
-  if (!res.ok) {
-    throw new Error("Network response was not ok");
-  }
-  return res.json();
-};
-
 function App() {
   const [open, setOpen] = useState(false);
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["hello"],
-    queryFn: fetchHello,
-  });
+
+  // tRPC를 사용한 데이터 페칭
+  const { data, isLoading, error } = trpc.hello.useQuery();
 
   return (
     <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
@@ -44,16 +31,20 @@ function App() {
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>shadcn/ui 테스트</DialogTitle>
+              <DialogTitle>shadcn/ui & tRPC 테스트</DialogTitle>
               <DialogDescription>
-                shadcn/ui Dialog 컴포넌트가 정상적으로 작동하고 있습니다! 🎉
+                shadcn/ui Dialog 컴포넌트와 tRPC가 정상적으로 작동하고 있습니다!
+                🎉
               </DialogDescription>
             </DialogHeader>
             <div className="py-4">
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 mb-2">
                 이 다이얼로그는 shadcn/ui의 Dialog 컴포넌트를 사용하여
                 만들어졌습니다. Radix UI를 기반으로 하며, TailwindCSS로
                 스타일링되었습니다.
+              </p>
+              <p className="text-sm text-blue-600 font-semibold">
+                API 통신은 tRPC를 통해 타입 안전하게 이루어집니다! 🚀
               </p>
             </div>
           </DialogContent>
@@ -93,7 +84,7 @@ function App() {
         ) : (
           <div className="bg-green-50 border-l-4 border-green-500 p-4">
             <p className="text-sm text-green-700 font-semibold mb-1">
-              서버 응답:
+              서버 응답 (via tRPC):
             </p>
             <p className="text-green-800">{data?.message}</p>
           </div>
