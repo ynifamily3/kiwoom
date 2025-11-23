@@ -15,9 +15,11 @@ export interface TokenRequest {
  * 접근토큰 발급 응답
  */
 export interface TokenResponse {
-  expires_dt: string;
-  token_type: string;
-  token: string;
+  expires_dt: string; // 만료일시 (YYYYMMDDHHmmss)
+  token_type: string; // 토큰 타입 (예: "bearer")
+  token: string; // 접근 토큰
+  return_code: number; // 응답 코드 (0: 정상)
+  return_msg: string; // 응답 메시지
 }
 
 /**
@@ -25,4 +27,14 @@ export interface TokenResponse {
  */
 export interface RevokeTokenRequest {
   token: string;
+  appkey: string;
+  secretkey: string;
+}
+
+/**
+ * 접근토큰 폐기 응답
+ */
+export interface RevokeTokenResponse {
+  return_code: number; // 응답 코드 (0: 정상)
+  return_msg: string; // 응답 메시지
 }

@@ -1,10 +1,25 @@
 import React, { useState } from "react";
 import ReactDOM from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { httpBatchLink } from "@trpc/client";
+import superjson from "superjson";
 import { trpc } from "./lib/trpc";
-import App from "./App";
+import { Toaster } from "sonner";
 import "./index.css";
+
+// Import the generated route tree
+import { routeTree } from "./routeTree.gen";
+
+// Create a new router instance
+const router = createRouter({ routeTree });
+
+// Register the router instance for type safety
+declare module "@tanstack/react-router" {
+  interface Register {
+    router: typeof router;
+  }
+}
 
 function Root() {
   const [queryClient] = useState(
@@ -26,6 +41,7 @@ function Root() {
       links: [
         httpBatchLink({
           url: "http://localhost:3001/api/trpc",
+          transformer: superjson,
           fetch(url, options) {
             return fetch(url, {
               ...options,
@@ -40,7 +56,8 @@ function Root() {
   return (
     <trpc.Provider client={trpcClient} queryClient={queryClient}>
       <QueryClientProvider client={queryClient}>
-        <App />
+        <Toaster position="top-center" richColors />
+        <RouterProvider router={router} />
       </QueryClientProvider>
     </trpc.Provider>
   );

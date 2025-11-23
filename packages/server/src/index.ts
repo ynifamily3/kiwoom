@@ -1,16 +1,14 @@
 import express, { Request, Response } from "express";
 import cors from "cors";
-import dotenv from "dotenv";
 import session from "express-session";
+import FileStore from "session-file-store";
 import cookieParser from "cookie-parser";
 import * as trpcExpress from "@trpc/server/adapters/express";
 import { appRouter } from "./trpc";
-
-dotenv.config();
+import { env } from "./config/env";
 
 const app = express();
-const PORT = process.env.PORT || 3001;
-const SESSION_SECRET = process.env.SESSION_SECRET || "default-secret-change-me";
+const SessionFileStore = FileStore(session);
 
 // Middleware
 app.use(
@@ -23,7 +21,12 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(
   session({
-    secret: SESSION_SECRET,
+    store: new SessionFileStore({
+      path: "./sessions", // 세션 파일 저장 경로
+      ttl: 60 * 60 * 24, // 24시간 (seconds)
+      retries: 0,
+    }),
+    secret: env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -45,8 +48,8 @@ app.use(
 );
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`🚀 Server is running on http://localhost:${PORT}`);
-  console.log(`📡 tRPC endpoint: http://localhost:${PORT}/api/trpc`);
+app.listen(env.PORT, () => {
+  console.log(`🚀 Server is running on http://localhost:${env.PORT}`);
+  console.log(`📡 tRPC endpoint: http://localhost:${env.PORT}/api/trpc`);
   console.log(`🔐 Session management enabled`);
 });

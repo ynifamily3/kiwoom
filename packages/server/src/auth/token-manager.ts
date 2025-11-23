@@ -1,10 +1,17 @@
 import fs from "fs";
 import path from "path";
+import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat";
+
+// dayjs 플러그인 설정
+dayjs.extend(customParseFormat);
 
 export interface TokenData {
   token: string;
   expires_dt: string;
   token_type: string;
+  return_code: number;
+  return_msg: string;
   created_at: string;
 }
 
@@ -40,16 +47,28 @@ export const loadToken = (): TokenData | null => {
     const data = fs.readFileSync(TOKEN_FILE_PATH, "utf-8");
     const tokenData: TokenData = JSON.parse(data);
 
-    // 토큰 만료 확인
-    const expiresDate = new Date(tokenData.expires_dt);
-    const now = new Date();
+    // 토큰 만료 확인 (expires_dt 형식: YYYYMMDDHHmmss)
+    const expiresDate = dayjs(tokenData.expires_dt, "YYYYMMDDHHmmss");
+    const now = dayjs();
 
-    if (now >= expiresDate) {
-      console.log("⚠️  저장된 토큰이 만료되었습니다");
+    if (!expiresDate.isValid()) {
+      console.error(
+        "❌ 만료일시 형식이 올바르지 않습니다:",
+        tokenData.expires_dt
+      );
       deleteToken();
       return null;
     }
 
+    if (now.isAfter(expiresDate) || now.isSame(expiresDate)) {
+      console.log("⚠️  저장된 토큰이 만료되었습니다");
+      console.log("   만료일시:", expiresDate.format("YYYY-MM-DD HH:mm:ss"));
+      deleteToken();
+      return null;
+    }
+
+    console.log("✅ 유효한 토큰 발견");
+    console.log("   만료일시:", expiresDate.format("YYYY-MM-DD HH:mm:ss"));
     return tokenData;
   } catch (error) {
     console.error("❌ 토큰 읽기 실패:", error);

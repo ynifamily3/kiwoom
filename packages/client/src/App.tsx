@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { toast } from "sonner";
+import dayjs from "dayjs";
 import { trpc } from "./lib/trpc";
 import { Button } from "./components/ui/button";
 import { GradientText } from "./components/animate-ui/primitives/texts/gradient";
@@ -14,14 +16,6 @@ import {
 import { Alert, AlertDescription } from "./components/ui/alert";
 import { Separator } from "./components/ui/separator";
 import { Spinner } from "./components/ui/spinner";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "./components/ui/dialog";
 
 function App() {
   const [open, setOpen] = useState(false);
@@ -36,17 +30,24 @@ function App() {
   // 로그인 mutation
   const loginMutation = trpc.login.useMutation({
     onSuccess: (result) => {
-      if (result.success && "data" in result && result.data) {
-        console.log("로그인 성공:", result.data);
+      if (result.success) {
+        console.log("로그인 성공");
+        toast.success("로그인 성공", {
+          description: result.message || "키움증권 API 인증 완료",
+        });
         refetchAuth();
       } else if ("error" in result) {
         console.error("로그인 실패:", result.error);
-        alert(`로그인 실패: ${result.error?.message}`);
+        toast.error("로그인 실패", {
+          description: result.error?.message,
+        });
       }
     },
     onError: (error) => {
       console.error("로그인 오류:", error);
-      alert(`로그인 오류: ${error.message}`);
+      toast.error("로그인 오류", {
+        description: error.message,
+      });
     },
   });
 
@@ -58,12 +59,16 @@ function App() {
         refetchAuth();
       } else if ("error" in result) {
         console.error("로그아웃 실패:", result.error);
-        alert(`로그아웃 실패: ${result.error?.message}`);
+        toast.error("로그아웃 실패", {
+          description: result.error?.message,
+        });
       }
     },
     onError: (error) => {
       console.error("로그아웃 오류:", error);
-      alert(`로그아웃 오류: ${error.message}`);
+      toast.error("로그아웃 오류", {
+        description: error.message,
+      });
     },
   });
 
@@ -76,6 +81,12 @@ function App() {
   };
 
   const isLoggedIn = authData?.isAuthenticated && authData?.hasValidToken;
+
+  // 만료일시 포맷팅 함수 (Date 객체 -> YYYY-MM-DD HH:mm:ss)
+  const formatExpiryDate = (expiryDate: Date | null) => {
+    if (!expiryDate) return "정보 없음";
+    return dayjs(expiryDate).format("YYYY-MM-DD HH:mm:ss");
+  };
 
   return (
     <div className="min-h-screen bg-linear-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
@@ -198,7 +209,7 @@ function App() {
                           ✅ 키움증권 API 인증 완료
                         </p>
                         <p className="text-xs text-green-600">
-                          만료일시: {authData?.tokenExpiry}
+                          만료일시: {formatExpiryDate(authData?.tokenExpiry)}
                         </p>
                         <p className="text-xs text-muted-foreground mt-2">
                           💾 토큰은 서버에 안전하게 저장됩니다
@@ -254,48 +265,6 @@ function App() {
           </Card>
 
           <Separator />
-
-          {/* 시작하기 버튼 */}
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button size="lg" className="w-full" variant="default">
-                🚀 투자 시작하기
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle className="text-2xl">
-                  <GradientText
-                    text="환영합니다!"
-                    className="from-pink-500 to-violet-500"
-                  />
-                </DialogTitle>
-                <DialogDescription className="text-base">
-                  Kiwoom Trading Service를 시작하려면 키움증권 계정이 필요합니다
-                </DialogDescription>
-              </DialogHeader>
-              <div className="py-4 space-y-3">
-                <Alert>
-                  <AlertDescription>
-                    <strong>준비 사항</strong>
-                    <ul className="mt-2 space-y-1 text-sm list-disc list-inside">
-                      <li>키움증권 계좌 개설</li>
-                      <li>OpenAPI 신청 및 승인</li>
-                      <li>API 키 발급</li>
-                    </ul>
-                  </AlertDescription>
-                </Alert>
-                <Alert className="border-blue-200 bg-blue-50">
-                  <AlertDescription className="text-blue-700">
-                    <strong>시스템 요구사항</strong>
-                    <p className="mt-1 text-sm">
-                      Windows 10 이상, 키움 OpenAPI+ 설치 필요
-                    </p>
-                  </AlertDescription>
-                </Alert>
-              </div>
-            </DialogContent>
-          </Dialog>
 
           <div className="text-center pt-4 space-y-2">
             <p className="text-sm text-muted-foreground">
