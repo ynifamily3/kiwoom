@@ -26,6 +26,12 @@ function Root() {
       links: [
         httpBatchLink({
           url: "http://localhost:3001/api/trpc",
+          fetch(url, options) {
+            return fetch(url, {
+              ...options,
+              credentials: "include", // 쿠키 포함
+            });
+          },
         }),
       ],
     })

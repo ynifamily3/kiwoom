@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { trpc } from "./lib/trpc";
 import { Button } from "./components/ui/button";
-import { SlidingNumber } from "./components/animate-ui/primitives/texts/sliding-number";
 import { GradientText } from "./components/animate-ui/primitives/texts/gradient";
 import { ShimmeringText } from "./components/animate-ui/primitives/texts/shimmering";
 import { Badge } from "./components/ui/badge";
@@ -13,7 +12,6 @@ import {
   CardTitle,
 } from "./components/ui/card";
 import { Alert, AlertDescription } from "./components/ui/alert";
-import { Skeleton } from "./components/ui/skeleton";
 import { Separator } from "./components/ui/separator";
 import { Spinner } from "./components/ui/spinner";
 import {
@@ -28,8 +26,56 @@ import {
 function App() {
   const [open, setOpen] = useState(false);
 
-  // tRPC를 사용한 데이터 페칭
-  const { data, isLoading, error } = trpc.hello.useQuery();
+  // 인증 상태 확인
+  const {
+    data: authData,
+    isLoading: authLoading,
+    refetch: refetchAuth,
+  } = trpc.checkAuth.useQuery();
+
+  // 로그인 mutation
+  const loginMutation = trpc.login.useMutation({
+    onSuccess: (result) => {
+      if (result.success && "data" in result && result.data) {
+        console.log("로그인 성공:", result.data);
+        refetchAuth();
+      } else if ("error" in result) {
+        console.error("로그인 실패:", result.error);
+        alert(`로그인 실패: ${result.error?.message}`);
+      }
+    },
+    onError: (error) => {
+      console.error("로그인 오류:", error);
+      alert(`로그인 오류: ${error.message}`);
+    },
+  });
+
+  // 로그아웃 mutation
+  const logoutMutation = trpc.logout.useMutation({
+    onSuccess: (result) => {
+      if (result.success) {
+        console.log("로그아웃 성공");
+        refetchAuth();
+      } else if ("error" in result) {
+        console.error("로그아웃 실패:", result.error);
+        alert(`로그아웃 실패: ${result.error?.message}`);
+      }
+    },
+    onError: (error) => {
+      console.error("로그아웃 오류:", error);
+      alert(`로그아웃 오류: ${error.message}`);
+    },
+  });
+
+  const handleLogin = () => {
+    loginMutation.mutate();
+  };
+
+  const handleLogout = () => {
+    logoutMutation.mutate();
+  };
+
+  const isLoggedIn = authData?.isAuthenticated && authData?.hasValidToken;
 
   return (
     <div className="min-h-screen bg-linear-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
@@ -126,38 +172,88 @@ function App() {
 
           <Separator />
 
-          {/* API 연결 상태 */}
-          {isLoading ? (
-            <Card>
-              <CardContent className="pt-6 space-y-3">
-                <div className="flex items-center justify-center">
-                  <Spinner className="w-12 h-12" />
+          {/* 로그인 상태 */}
+          <Card className={isLoggedIn ? "border-green-200" : "border-gray-200"}>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center justify-between">
+                <span>🔐 인증 상태</span>
+                {isLoggedIn && (
+                  <Badge variant="default" className="bg-green-600">
+                    로그인됨
+                  </Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {authLoading ? (
+                <div className="flex items-center justify-center py-4">
+                  <Spinner className="w-8 h-8" />
                 </div>
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-3/4" />
-                <p className="text-center text-sm text-muted-foreground">
-                  서버 연결 중...
-                </p>
-              </CardContent>
-            </Card>
-          ) : error ? (
-            <Alert variant="destructive">
-              <AlertDescription>
-                <strong>서버 연결 실패:</strong> {error.message}
-              </AlertDescription>
-            </Alert>
-          ) : (
-            <Alert className="border-green-200 bg-green-50">
-              <AlertDescription className="space-y-1">
-                <div className="text-sm font-semibold text-green-700 flex items-center gap-2">
-                  ✅ 서버 연결 성공 (via tRPC)
-                </div>
-                <div className="text-green-800">
-                  <ShimmeringText text={data?.message || ""} />
-                </div>
-              </AlertDescription>
-            </Alert>
-          )}
+              ) : isLoggedIn ? (
+                <>
+                  <Alert className="border-green-200 bg-green-50">
+                    <AlertDescription>
+                      <div className="space-y-1">
+                        <p className="text-sm font-semibold text-green-700">
+                          ✅ 키움증권 API 인증 완료
+                        </p>
+                        <p className="text-xs text-green-600">
+                          만료일시: {authData?.tokenExpiry}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          💾 토큰은 서버에 안전하게 저장됩니다
+                        </p>
+                      </div>
+                    </AlertDescription>
+                  </Alert>
+                  <Button
+                    onClick={handleLogout}
+                    variant="destructive"
+                    className="w-full"
+                    disabled={logoutMutation.isPending}
+                  >
+                    {logoutMutation.isPending ? (
+                      <>
+                        <Spinner className="w-4 h-4 mr-2" />
+                        로그아웃 중...
+                      </>
+                    ) : (
+                      "🚪 로그아웃"
+                    )}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Alert>
+                    <AlertDescription>
+                      <p className="text-sm">
+                        키움증권 API를 사용하려면 로그인이 필요합니다
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        🍪 세션 기반 인증으로 안전하게 관리됩니다
+                      </p>
+                    </AlertDescription>
+                  </Alert>
+                  <Button
+                    onClick={handleLogin}
+                    className="w-full"
+                    disabled={loginMutation.isPending}
+                  >
+                    {loginMutation.isPending ? (
+                      <>
+                        <Spinner className="w-4 h-4 mr-2" />
+                        로그인 중...
+                      </>
+                    ) : (
+                      "🔑 로그인"
+                    )}
+                  </Button>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          <Separator />
 
           {/* 시작하기 버튼 */}
           <Dialog open={open} onOpenChange={setOpen}>
