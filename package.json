@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "pnpm --parallel -r dev",
     "build": "pnpm -r build",
-    "clean": "pnpm -r clean"
+    "clean": "pnpm -r clean",
+    "ui:add": "cd packages/client && pnpm dlx shadcn@latest add"
   },
   "keywords": [],
   "author": "",
