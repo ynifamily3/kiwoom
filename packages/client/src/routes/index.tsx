@@ -1,7 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { GradientText } from "../components/animate-ui/primitives/texts/gradient";
 import { ShimmeringText } from "../components/animate-ui/primitives/texts/shimmering";
 import { Badge } from "../components/ui/badge";
+import { trpc } from "../lib/trpc";
 import {
   Card,
   CardContent,
@@ -21,6 +23,8 @@ import {
   DialogTrigger,
 } from "../components/ui/dialog";
 import { useState } from "react";
+import { toast } from "sonner";
+import { useNavigate } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -28,6 +32,39 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
+
+  // 인증 상태 확인 (새로운 패턴)
+  const { data: authData, refetch: refetchAuth } = useQuery(
+    trpc.checkAuth.queryOptions()
+  );
+  const isLoggedIn = authData?.isAuthenticated && authData?.hasValidToken;
+
+  // 로그아웃 mutation (새로운 패턴)
+  const logoutMutation = useMutation({
+    mutationFn: trpc.logout.mutationOptions().mutationFn,
+    onSuccess: (result) => {
+      if (result.success) {
+        toast.success("로그아웃 성공", {
+          description: "안전하게 로그아웃되었습니다",
+        });
+        refetchAuth();
+      } else if ("error" in result) {
+        toast.error("로그아웃 실패", {
+          description: result.error?.message,
+        });
+      }
+    },
+    onError: (error) => {
+      toast.error("로그아웃 오류", {
+        description: error.message,
+      });
+    },
+  });
+
+  const handleLogout = () => {
+    logoutMutation.mutate();
+  };
 
   return (
     <div className="min-h-screen bg-linear-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
@@ -126,55 +163,73 @@ function Index() {
           <Separator />
 
           {/* 시작하기 버튼 */}
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button size="lg" className="w-full" variant="default">
-                🚀 투자 시작하기
+          {isLoggedIn ? (
+            <div className="flex gap-2">
+              <Button asChild size="lg" className="flex-1" variant="default">
+                <Link to="/app">📊 대시보드로 이동</Link>
               </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle className="text-2xl">
-                  <GradientText
-                    text="환영합니다!"
-                    className="from-pink-500 to-violet-500"
-                  />
-                </DialogTitle>
-                <DialogDescription className="text-base">
-                  Kiwoom Trading Service를 시작하려면 키움증권 계정이 필요합니다
-                </DialogDescription>
-              </DialogHeader>
-              <div className="py-4 space-y-3">
-                <Alert>
-                  <AlertDescription>
-                    <strong>준비 사항</strong>
-                    <ul className="mt-2 space-y-1 text-sm list-disc list-inside">
-                      <li>키움증권 계좌 개설</li>
-                      <li>OpenAPI 신청 및 승인</li>
-                      <li>API 키 발급</li>
-                    </ul>
-                  </AlertDescription>
-                </Alert>
-                <Alert className="border-blue-200 bg-blue-50">
-                  <AlertDescription className="text-blue-700">
-                    <strong>시스템 요구사항</strong>
-                    <p className="mt-1 text-sm">
-                      Windows 10 이상, 키움 OpenAPI+ 설치 필요
-                    </p>
-                  </AlertDescription>
-                </Alert>
-              </div>
               <Button
-                onClick={() => {
-                  setOpen(false);
-                  window.location.href = "/login";
-                }}
-                className="w-full"
+                size="lg"
+                variant="destructive"
+                onClick={handleLogout}
+                disabled={logoutMutation.isPending}
+                className="min-w-[120px]"
               >
-                로그인하러 가기
+                {logoutMutation.isPending ? "로그아웃 중..." : "🚪 로그아웃"}
               </Button>
-            </DialogContent>
-          </Dialog>
+            </div>
+          ) : (
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button size="lg" className="w-full" variant="default">
+                  🚀 투자 시작하기
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl">
+                    <GradientText
+                      text="환영합니다!"
+                      className="from-pink-500 to-violet-500"
+                    />
+                  </DialogTitle>
+                  <DialogDescription className="text-base">
+                    Kiwoom Trading Service를 시작하려면 키움증권 계정이
+                    필요합니다
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="py-4 space-y-3">
+                  <Alert>
+                    <AlertDescription>
+                      <strong>준비 사항</strong>
+                      <ul className="mt-2 space-y-1 text-sm list-disc list-inside">
+                        <li>키움증권 계좌 개설</li>
+                        <li>OpenAPI 신청 및 승인</li>
+                        <li>API 키 발급</li>
+                      </ul>
+                    </AlertDescription>
+                  </Alert>
+                  <Alert className="border-blue-200 bg-blue-50">
+                    <AlertDescription className="text-blue-700">
+                      <strong>시스템 요구사항</strong>
+                      <p className="mt-1 text-sm">
+                        Windows 10 이상, 키움 OpenAPI+ 설치 필요
+                      </p>
+                    </AlertDescription>
+                  </Alert>
+                </div>
+                <Button
+                  asChild
+                  onClick={() => {
+                    setOpen(false);
+                  }}
+                  className="w-full"
+                >
+                  <Link to="/login">로그인하러 가기</Link>
+                </Button>
+              </DialogContent>
+            </Dialog>
+          )}
 
           <div className="text-center pt-4 space-y-2">
             <p className="text-sm text-muted-foreground">

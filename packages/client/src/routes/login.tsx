@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { trpc } from "../lib/trpc";
 import { Button } from "../components/ui/button";
@@ -30,15 +31,16 @@ function Login() {
   const navigate = useNavigate();
   const { redirect } = Route.useSearch();
 
-  // 인증 상태 확인
+  // 인증 상태 확인 (새로운 패턴)
   const {
     data: authData,
     isLoading: authLoading,
     refetch: refetchAuth,
-  } = trpc.checkAuth.useQuery();
+  } = useQuery(trpc.checkAuth.queryOptions());
 
-  // 로그인 mutation
-  const loginMutation = trpc.login.useMutation({
+  // 로그인 mutation (새로운 패턴)
+  const loginMutation = useMutation({
+    mutationFn: trpc.login.mutationOptions().mutationFn,
     onSuccess: (result) => {
       if (result.success) {
         console.log("로그인 성공");
@@ -46,8 +48,8 @@ function Login() {
           description: result.message || "키움증권 API 인증 완료",
         });
         refetchAuth();
-        // 로그인 성공 시 redirect 파라미터로 지정된 페이지로 이동
-        navigate({ to: redirect as any });
+        // 로그인 성공 시 redirect 파라미터로 지정된 페이지로 이동 (히스토리 replace)
+        navigate({ to: redirect as any, replace: true });
       } else if ("error" in result) {
         console.error("로그인 실패:", result.error);
         toast.error("로그인 실패", {
@@ -69,9 +71,9 @@ function Login() {
 
   const isLoggedIn = authData?.isAuthenticated && authData?.hasValidToken;
 
-  // 이미 로그인되어 있으면 redirect 파라미터로 지정된 페이지로 리다이렉트
+  // 이미 로그인되어 있으면 redirect 파라미터로 지정된 페이지로 리다이렉트 (히스토리 replace)
   if (isLoggedIn) {
-    navigate({ to: redirect as any });
+    navigate({ to: redirect as any, replace: true });
     return null;
   }
 

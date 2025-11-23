@@ -30,7 +30,7 @@ interface ErrorResponse {
 }
 
 // Context 타입 정의
-interface Context {
+export interface Context {
   req: Request;
   res: Response;
 }

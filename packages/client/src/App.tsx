@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import dayjs from "dayjs";
 import { trpc } from "./lib/trpc";
@@ -18,17 +18,16 @@ import { Separator } from "./components/ui/separator";
 import { Spinner } from "./components/ui/spinner";
 
 function App() {
-  const [open, setOpen] = useState(false);
-
-  // 인증 상태 확인
+  // 인증 상태 확인 (새로운 패턴)
   const {
     data: authData,
     isLoading: authLoading,
     refetch: refetchAuth,
-  } = trpc.checkAuth.useQuery();
+  } = useQuery(trpc.checkAuth.queryOptions());
 
-  // 로그인 mutation
-  const loginMutation = trpc.login.useMutation({
+  // 로그인 mutation (새로운 패턴)
+  const loginMutation = useMutation({
+    mutationFn: trpc.login.mutationOptions().mutationFn,
     onSuccess: (result) => {
       if (result.success) {
         console.log("로그인 성공");
@@ -51,8 +50,9 @@ function App() {
     },
   });
 
-  // 로그아웃 mutation
-  const logoutMutation = trpc.logout.useMutation({
+  // 로그아웃 mutation (새로운 패턴)
+  const logoutMutation = useMutation({
+    mutationFn: trpc.logout.mutationOptions().mutationFn,
     onSuccess: (result) => {
       if (result.success) {
         console.log("로그아웃 성공");

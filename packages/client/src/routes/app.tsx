@@ -1,4 +1,5 @@
-import { createFileRoute, useNavigate, redirect } from "@tanstack/react-router";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import dayjs from "dayjs";
 import { trpc } from "../lib/trpc";
@@ -16,9 +17,32 @@ import { Spinner } from "../components/ui/spinner";
 import { Separator } from "../components/ui/separator";
 
 export const Route = createFileRoute("/app")({
-  beforeLoad: async ({ location }) => {
-    // 서버에서 인증 상태 확인은 컴포넌트에서 하므로 여기서는 redirect만 준비
-    // 실제 인증 확인은 컴포넌트에서 수행
+  beforeLoad: async ({ location, context }) => {
+    // tRPC queryOptions를 사용한 인증 상태 확인
+    const { queryClient, trpc } = context;
+    try {
+      const authData = await queryClient.ensureQueryData(
+        trpc.checkAuth.queryOptions()
+      );
+
+      const isLoggedIn = authData?.isAuthenticated && authData?.hasValidToken;
+
+      if (!isLoggedIn) {
+        throw redirect({
+          to: "/login",
+          search: { redirect: location.pathname },
+        });
+      }
+    } catch (error) {
+      if (error instanceof Error && "to" in error) {
+        throw error; // redirect 에러는 그대로 throw
+      }
+      // 네트워크 에러 등의 경우 로그인 페이지로
+      throw redirect({
+        to: "/login",
+        search: { redirect: location.pathname },
+      });
+    }
   },
   component: App,
 });
@@ -26,15 +50,16 @@ export const Route = createFileRoute("/app")({
 function App() {
   const navigate = useNavigate();
 
-  // 인증 상태 확인
+  // 인증 상태 확인 (새로운 패턴)
   const {
     data: authData,
     isLoading: authLoading,
     refetch: refetchAuth,
-  } = trpc.checkAuth.useQuery();
+  } = useQuery(trpc.checkAuth.queryOptions());
 
-  // 로그아웃 mutation
-  const logoutMutation = trpc.logout.useMutation({
+  // 로그아웃 mutation (새로운 패턴)
+  const logoutMutation = useMutation({
+    mutationFn: trpc.logout.mutationOptions().mutationFn,
     onSuccess: (result) => {
       if (result.success) {
         console.log("로그아웃 성공");
@@ -69,12 +94,6 @@ function App() {
     if (!expiryDate) return "정보 없음";
     return dayjs(expiryDate).format("YYYY-MM-DD HH:mm:ss");
   };
-
-  // 로그인되어 있지 않으면 로그인 페이지로 리다이렉트 (redirect 파라미터와 함께)
-  if (!authLoading && !isLoggedIn) {
-    navigate({ to: "/login", search: { redirect: "/app" } });
-    return null;
-  }
 
   return (
     <div className="min-h-screen bg-linear-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">

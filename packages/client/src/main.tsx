@@ -1,10 +1,9 @@
-import React, { useState } from "react";
+import React from "react";
 import ReactDOM from "react-dom/client";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
-import { httpBatchLink } from "@trpc/client";
-import superjson from "superjson";
-import { trpc } from "./lib/trpc";
+import { queryClient, trpc } from "./lib/trpc";
 import { Toaster } from "sonner";
 import "./index.css";
 
@@ -12,7 +11,13 @@ import "./index.css";
 import { routeTree } from "./routeTree.gen";
 
 // Create a new router instance
-const router = createRouter({ routeTree });
+const router = createRouter({
+  routeTree,
+  context: {
+    queryClient,
+    trpc,
+  },
+});
 
 // Register the router instance for type safety
 declare module "@tanstack/react-router" {
@@ -22,44 +27,12 @@ declare module "@tanstack/react-router" {
 }
 
 function Root() {
-  const [queryClient] = useState(
-    () =>
-      new QueryClient({
-        defaultOptions: {
-          queries: {
-            staleTime: 1000 * 60 * 5, // 5분
-            gcTime: 1000 * 60 * 10, // 10분
-            refetchOnWindowFocus: false,
-            retry: 1,
-          },
-        },
-      })
-  );
-
-  const [trpcClient] = useState(() =>
-    trpc.createClient({
-      links: [
-        httpBatchLink({
-          url: "http://localhost:3001/api/trpc",
-          transformer: superjson,
-          fetch(url, options) {
-            return fetch(url, {
-              ...options,
-              credentials: "include", // 쿠키 포함
-            });
-          },
-        }),
-      ],
-    })
-  );
-
   return (
-    <trpc.Provider client={trpcClient} queryClient={queryClient}>
-      <QueryClientProvider client={queryClient}>
-        <Toaster position="top-center" richColors />
-        <RouterProvider router={router} />
-      </QueryClientProvider>
-    </trpc.Provider>
+    <QueryClientProvider client={queryClient}>
+      <ReactQueryDevtools initialIsOpen={false} />
+      <Toaster position="top-center" richColors />
+      <RouterProvider router={router} />
+    </QueryClientProvider>
   );
 }
 
