@@ -26,7 +26,7 @@ export function AppHeader({
           <div className="flex items-center gap-3">
             <GradientText
               text="Kiwoom Trading"
-              className="text-2xl font-bold from-blue-600 via-indigo-600 to-purple-600"
+              className="text-2xl font-bold from-gray-800 via-gray-700 to-gray-900"
             />
           </div>
 

@@ -16,8 +16,15 @@ import { Button } from "../ui/button";
 import { Calendar } from "../ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Skeleton } from "../ui/skeleton";
-import { CalendarIcon, ChevronDown } from "lucide-react";
-import { format } from "date-fns";
+import {
+  CalendarIcon,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+} from "lucide-react";
+import { format, addDays, subDays, addWeeks, subWeeks } from "date-fns";
 import { ko } from "date-fns/locale";
 import type { DailyBalanceStock, DailyBalanceResponse } from "@kiwoom/shared";
 
@@ -68,6 +75,24 @@ export function DailyBalanceCard() {
     }
   };
 
+  // 날짜 변경 핸들러
+  const handleDateChange = (newDate: Date) => {
+    const today = new Date();
+    today.setHours(23, 59, 59, 999); // 오늘 끝까지 허용
+    if (newDate > today) return; // 미래 날짜는 차단
+    setSelectedDate(newDate);
+  };
+
+  const handlePreviousDay = () => handleDateChange(subDays(selectedDate, 1));
+  const handleNextDay = () => handleDateChange(addDays(selectedDate, 1));
+  const handlePreviousWeek = () => handleDateChange(subWeeks(selectedDate, 1));
+  const handleNextWeek = () => handleDateChange(addWeeks(selectedDate, 1));
+  const handleToday = () => handleDateChange(new Date());
+
+  const isToday =
+    format(selectedDate, "yyyyMMdd") === format(new Date(), "yyyyMMdd");
+  const isFutureDay = selectedDate >= new Date();
+
   if (error) {
     return (
       <Card>
@@ -92,14 +117,28 @@ export function DailyBalanceCard() {
   };
 
   const formatPercent = (value: string) => {
+    if (!value || value.trim() === "") {
+      return "- %";
+    }
     const num = parseFloat(value);
     return `${num >= 0 ? "+" : ""}${num.toFixed(2)}%`;
   };
 
-  const isProfitable = data ? parseFloat(data.tot_prft_rt) >= 0 : false;
+  const isProfitable =
+    data && data.tot_prft_rt && data.tot_prft_rt.trim() !== ""
+      ? parseFloat(data.tot_prft_rt) >= 0
+      : null;
 
   return (
-    <Card className={isProfitable ? "border-green-200" : "border-gray-200"}>
+    <Card
+      className={
+        isProfitable === null
+          ? "border-gray-200"
+          : isProfitable
+          ? "border-green-200"
+          : "border-gray-200"
+      }
+    >
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
@@ -109,7 +148,18 @@ export function DailyBalanceCard() {
                 <Skeleton className="h-5 w-32" />
               ) : data ? (
                 <span className="text-sm font-medium">
-                  기준일: {format(new Date(data.dt.slice(0, 4) + "-" + data.dt.slice(4, 6) + "-" + data.dt.slice(6, 8)), "PPP", { locale: ko })}
+                  기준일:{" "}
+                  {format(
+                    new Date(
+                      data.dt.slice(0, 4) +
+                        "-" +
+                        data.dt.slice(4, 6) +
+                        "-" +
+                        data.dt.slice(6, 8)
+                    ),
+                    "PPP",
+                    { locale: ko }
+                  )}
                 </span>
               ) : (
                 <span className="text-sm text-muted-foreground">기준일: -</span>
@@ -129,24 +179,63 @@ export function DailyBalanceCard() {
                 <Calendar
                   mode="single"
                   selected={selectedDate}
-                  onSelect={(date) => date && setSelectedDate(date)}
-                  initialFocus
+                  onSelect={(date) => date && handleDateChange(date)}
                   locale={ko}
+                  disabled={(date) => date > new Date()}
                 />
               </PopoverContent>
             </Popover>
-            <Badge
-              variant={isProfitable ? "default" : "destructive"}
-              className={isProfitable ? "bg-green-600" : ""}
-            >
-              {isLoading ? (
-                <Skeleton className="h-4 w-12" />
-              ) : data ? (
-                formatPercent(data.tot_prft_rt)
-              ) : (
-                "-"
-              )}
-            </Badge>
+            {/* 날짜 네비게이션 */}
+            <div className="flex items-center gap-1 border rounded-md p-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={handlePreviousWeek}
+                title="일주일 전"
+              >
+                <ChevronsLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={handlePreviousDay}
+                title="이전 일"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs"
+                onClick={handleToday}
+                disabled={isToday}
+                title="오늘"
+              >
+                오늘
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={handleNextDay}
+                disabled={isFutureDay}
+                title="다음 일"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={handleNextWeek}
+                disabled={isFutureDay}
+                title="일주일 후"
+              >
+                <ChevronsRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
       </CardHeader>
@@ -179,21 +268,48 @@ export function DailyBalanceCard() {
           </div>
           <div>
             <p className="text-sm text-muted-foreground">총 평가손익</p>
-            <p
-              className={`text-lg font-semibold ${
-                isProfitable ? "text-green-600" : "text-red-600"
-              }`}
-            >
-              {isLoading ? (
-                <Skeleton className="h-7 w-32" />
-              ) : data ? (
-                `${isProfitable ? "+" : ""}₩${formatNumber(
-                  data.tot_evltv_prft
-                )}`
-              ) : (
-                "-"
-              )}
-            </p>
+            <div className="flex items-baseline gap-2">
+              <p
+                className={`text-lg font-semibold ${
+                  isProfitable === null
+                    ? "text-gray-600"
+                    : isProfitable
+                    ? "text-green-600"
+                    : "text-red-600"
+                }`}
+              >
+                {isLoading ? (
+                  <Skeleton className="h-7 w-32" />
+                ) : data ? (
+                  data.tot_evltv_prft && data.tot_evltv_prft.trim() !== "" ? (
+                    `${isProfitable ? "+" : ""}₩${formatNumber(
+                      data.tot_evltv_prft
+                    )}`
+                  ) : (
+                    "-"
+                  )
+                ) : (
+                  "-"
+                )}
+              </p>
+              <span
+                className={`text-sm font-medium ${
+                  isProfitable === null
+                    ? "text-gray-600"
+                    : isProfitable
+                    ? "text-green-600"
+                    : "text-red-600"
+                }`}
+              >
+                {isLoading ? (
+                  <Skeleton className="h-5 w-12" />
+                ) : data ? (
+                  formatPercent(data.tot_prft_rt)
+                ) : (
+                  "-"
+                )}
+              </span>
+            </div>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">예수금</p>
