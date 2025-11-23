@@ -31,10 +31,20 @@ The server uses `tsx watch` for hot reload, client uses Vite HMR.
 
 **Composite project setup**: Root `tsconfig.json` has `composite: true` and `incremental: true`. Each package extends the root config but customizes:
 
-- **Client**: Uses `"jsx": "react-jsx"`, `"noEmit": true` (Vite handles bundling), `"moduleResolution": "bundler"`
+- **Client**: Uses `"jsx": "react-jsx"`, `"noEmit": true` (Vite handles bundling), `"moduleResolution": "bundler"`, `"type": "module"` in package.json for ESM support
 - **Server**: Uses `"module": "CommonJS"`, emits to `dist/`, includes Node types
 
 When adding shared types, export from `packages/shared/src/index.ts` and reference as `@kiwoom/shared` (if workspace references are configured) or via relative paths.
+
+## TailwindCSS v4 Setup
+
+**Modern Vite plugin approach** (no PostCSS config needed):
+
+- Install: `pnpm add -D tailwindcss@next @tailwindcss/vite@next`
+- Add `@tailwindcss/vite` plugin to `vite.config.ts`: `import tailwindcss from '@tailwindcss/vite'`
+- Use `@import "tailwindcss";` in CSS instead of `@tailwind` directives
+- **No `tailwind.config.js` or `postcss.config.js` required** - configuration is handled automatically
+- Client package.json must have `"type": "module"` for ESM compatibility
 
 ## Code Conventions
 
