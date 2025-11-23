@@ -37,65 +37,82 @@ function App() {
         <CardHeader className="text-center space-y-4">
           <CardTitle className="text-5xl font-bold">
             <GradientText
-              text="Kiwoom Service"
+              text="Kiwoom Trading Service"
               className="from-blue-600 via-indigo-600 to-purple-600"
             />
           </CardTitle>
-          <CardDescription className="flex items-center justify-center gap-2">
+          <CardDescription className="text-lg space-y-2">
             <ShimmeringText
-              text="Modern Monorepo Architecture"
-              className="text-lg"
+              text="AI 기반 개인 주식 투자 플랫폼"
+              className="text-xl font-semibold"
             />
-            <SlidingNumber
-              number={113}
-              className="text-lg font-semibold text-blue-600"
-            />
+            <p className="text-muted-foreground">
+              키움증권 API를 활용한 스마트 투자 솔루션
+            </p>
           </CardDescription>
         </CardHeader>
 
         <CardContent className="space-y-6">
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button variant="destructive" size="lg" className="w-full">
-                🎉 테스트 대화상자 열기
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle className="text-2xl">
-                  <GradientText
-                    text="shadcn/ui & tRPC 테스트"
-                    className="from-pink-500 to-violet-500"
-                  />
-                </DialogTitle>
-                <DialogDescription className="text-base">
-                  모든 컴포넌트가 정상적으로 작동하고 있습니다! 🎉
-                </DialogDescription>
-              </DialogHeader>
-              <div className="py-4 space-y-3">
-                <Alert>
-                  <AlertDescription>
-                    shadcn/ui Dialog 컴포넌트를 사용합니다. Radix UI 기반이며
-                    TailwindCSS로 스타일링되었습니다.
+          {/* 서비스 소개 섹션 */}
+          <Card className="border-2 border-blue-100 bg-linear-to-br from-blue-50 to-indigo-50">
+            <CardHeader>
+              <CardTitle className="text-xl flex items-center gap-2">
+                📈 서비스 소개
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Kiwoom Trading Service는 키움증권 Open API를 활용하여 개인
+                투자자가 효율적으로 주식 투자를 관리할 수 있도록 돕는 웹 기반
+                플랫폼입니다.
+              </p>
+              <div className="grid gap-3">
+                <Alert className="border-blue-200">
+                  <AlertDescription className="flex items-start gap-2">
+                    <span className="text-blue-600 font-semibold">💡</span>
+                    <div>
+                      <strong>실시간 시세 조회</strong>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        실시간 주가, 호가, 체결 정보를 확인하고 빠른 의사결정을
+                        지원합니다
+                      </p>
+                    </div>
                   </AlertDescription>
                 </Alert>
-                <Alert className="border-blue-200 bg-blue-50">
-                  <AlertDescription className="text-blue-700 font-semibold">
-                    API 통신은 tRPC를 통해 타입 안전하게 이루어집니다! 🚀
+                <Alert className="border-green-200">
+                  <AlertDescription className="flex items-start gap-2">
+                    <span className="text-green-600 font-semibold">🤖</span>
+                    <div>
+                      <strong>자동 매매 시스템</strong>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        사용자 정의 전략에 따른 자동 주문 및 포트폴리오 관리
+                      </p>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+                <Alert className="border-purple-200">
+                  <AlertDescription className="flex items-start gap-2">
+                    <span className="text-purple-600 font-semibold">📊</span>
+                    <div>
+                      <strong>데이터 분석 & 시각화</strong>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        투자 현황과 수익률을 직관적인 차트로 확인
+                      </p>
+                    </div>
                   </AlertDescription>
                 </Alert>
               </div>
-            </DialogContent>
-          </Dialog>
+            </CardContent>
+          </Card>
 
           <Separator />
 
           <div className="space-y-3">
             <h3 className="text-sm font-semibold text-muted-foreground">
-              Tech Stack
+              🛠️ Technology Stack
             </h3>
             <div className="flex flex-wrap gap-2">
-              <Badge variant="default">React</Badge>
+              <Badge variant="default">React 19</Badge>
               <Badge variant="default">TypeScript</Badge>
               <Badge variant="secondary">TailwindCSS v4</Badge>
               <Badge variant="secondary">shadcn/ui</Badge>
@@ -103,12 +120,13 @@ function App() {
               <Badge variant="outline">Express</Badge>
               <Badge variant="outline">tRPC</Badge>
               <Badge variant="outline">React Query</Badge>
-              <Badge variant="outline">pnpm</Badge>
+              <Badge variant="outline">Kiwoom API</Badge>
             </div>
           </div>
 
           <Separator />
 
+          {/* API 연결 상태 */}
           {isLoading ? (
             <Card>
               <CardContent className="pt-6 space-y-3">
@@ -117,19 +135,22 @@ function App() {
                 </div>
                 <Skeleton className="h-4 w-full" />
                 <Skeleton className="h-4 w-3/4" />
+                <p className="text-center text-sm text-muted-foreground">
+                  서버 연결 중...
+                </p>
               </CardContent>
             </Card>
           ) : error ? (
             <Alert variant="destructive">
               <AlertDescription>
-                <strong>에러 발생:</strong> {error.message}
+                <strong>서버 연결 실패:</strong> {error.message}
               </AlertDescription>
             </Alert>
           ) : (
             <Alert className="border-green-200 bg-green-50">
               <AlertDescription className="space-y-1">
-                <div className="text-sm font-semibold text-green-700">
-                  서버 응답 (via tRPC)
+                <div className="text-sm font-semibold text-green-700 flex items-center gap-2">
+                  ✅ 서버 연결 성공 (via tRPC)
                 </div>
                 <div className="text-green-800">
                   <ShimmeringText text={data?.message || ""} />
@@ -138,9 +159,54 @@ function App() {
             </Alert>
           )}
 
-          <div className="text-center pt-4">
+          {/* 시작하기 버튼 */}
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button size="lg" className="w-full" variant="default">
+                🚀 투자 시작하기
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle className="text-2xl">
+                  <GradientText
+                    text="환영합니다!"
+                    className="from-pink-500 to-violet-500"
+                  />
+                </DialogTitle>
+                <DialogDescription className="text-base">
+                  Kiwoom Trading Service를 시작하려면 키움증권 계정이 필요합니다
+                </DialogDescription>
+              </DialogHeader>
+              <div className="py-4 space-y-3">
+                <Alert>
+                  <AlertDescription>
+                    <strong>준비 사항</strong>
+                    <ul className="mt-2 space-y-1 text-sm list-disc list-inside">
+                      <li>키움증권 계좌 개설</li>
+                      <li>OpenAPI 신청 및 승인</li>
+                      <li>API 키 발급</li>
+                    </ul>
+                  </AlertDescription>
+                </Alert>
+                <Alert className="border-blue-200 bg-blue-50">
+                  <AlertDescription className="text-blue-700">
+                    <strong>시스템 요구사항</strong>
+                    <p className="mt-1 text-sm">
+                      Windows 10 이상, 키움 OpenAPI+ 설치 필요
+                    </p>
+                  </AlertDescription>
+                </Alert>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <div className="text-center pt-4 space-y-2">
             <p className="text-sm text-muted-foreground">
-              🚀 모노레포 환경으로 구성되었습니다
+              🚀 Modern Monorepo Architecture
+            </p>
+            <p className="text-xs text-muted-foreground">
+              안전하고 효율적인 주식 투자를 위한 스마트 솔루션
             </p>
           </div>
         </CardContent>
