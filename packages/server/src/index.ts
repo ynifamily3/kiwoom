@@ -21,15 +21,6 @@ app.use(
   })
 );
 
-// 기존 REST API Routes (호환성 유지)
-app.get("/api/health", (req: Request, res: Response) => {
-  res.json({ status: "ok", message: "Server is running" });
-});
-
-app.get("/api/hello", (req: Request, res: Response) => {
-  res.json({ message: "Hello from Kiwoom Service!" });
-});
-
 // Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server is running on http://localhost:${PORT}`);
