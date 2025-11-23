@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import dayjs from "dayjs";
 import { trpc } from "../lib/trpc";
 import { AppHeader } from "../components/app/AppHeader";
+import { DailyBalanceCard } from "../components/app/DailyBalanceCard";
 import {
   Card,
   CardContent,
@@ -142,6 +143,11 @@ function App() {
                 </CardContent>
               </Card>
             )}
+
+            <Separator />
+
+            {/* 일별잔고수익률 */}
+            <DailyBalanceCard />
 
             <Separator />
 

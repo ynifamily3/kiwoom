@@ -94,7 +94,6 @@ export const deleteToken = (): void => {
 /**
  * 현재 유효한 토큰 가져오기
  */
-export const getValidToken = (): string | null => {
-  const tokenData = loadToken();
-  return tokenData ? tokenData.token : null;
+export const getValidToken = (): TokenData | null => {
+  return loadToken();
 };

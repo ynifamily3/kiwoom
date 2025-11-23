@@ -11,6 +11,10 @@ import {
   deleteToken,
   getValidToken,
 } from "./auth/token-manager";
+import type {
+  DailyBalanceStock,
+  DailyBalanceResponse,
+} from "@kiwoom/shared";
 
 // dayjs 플러그인 설정
 dayjs.extend(customParseFormat);
@@ -251,6 +255,87 @@ export const appRouter = router({
         ...input,
         createdAt: new Date().toISOString(),
       };
+    }),
+
+  // 일별잔고수익률 조회 (ka01690)
+  getDailyBalance: publicProcedure
+    .input(
+      z.object({
+        qry_dt: z.string().regex(/^\d{8}$/, "YYYYMMDD 형식이어야 합니다"),
+        cont_yn: z.string().optional().default("N"),
+        next_key: z.string().optional().default(""),
+      })
+    )
+    .query(async ({ input }) => {
+      try {
+        // 유효한 토큰 가져오기
+        const tokenData = getValidToken();
+        if (!tokenData) {
+          throw new Error("유효한 토큰이 없습니다. 로그인이 필요합니다.");
+        }
+
+        console.log("📊 일별잔고수익률 조회 요청:", {
+          qry_dt: input.qry_dt,
+          cont_yn: input.cont_yn,
+          next_key: input.next_key || "(없음)",
+        });
+
+        const url = `${env.KIWOOM_API_URL}/api/dostk/acnt`;
+
+        const headers = {
+          "Content-Type": "application/json;charset=UTF-8",
+          authorization: `Bearer ${tokenData.token}`,
+          "api-id": "ka01690",
+          "cont-yn": input.cont_yn || "N",
+          "next-key": input.next_key || "",
+        };
+
+        const response = await fetch(url, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ qry_dt: input.qry_dt }),
+        });
+
+        // 응답 헤더에서 next_key 추출
+        const nextKey = response.headers.get("next-key");
+        const contYn = response.headers.get("cont-yn");
+
+        console.log("📡 응답 코드:", response.status);
+        console.log("📡 응답 헤더:", {
+          "cont-yn": contYn,
+          "next-key": nextKey || "(없음)",
+        });
+
+        if (!response.ok) {
+          throw new Error(
+            `API 요청 실패: ${response.status} ${response.statusText}`
+          );
+        }
+
+        const data = (await response.json()) as DailyBalanceResponse;
+
+        // 응답에 next_key 추가
+        if (nextKey) {
+          data.next_key = nextKey;
+        }
+
+        console.log("✅ 일별잔고수익률 조회 성공");
+        console.log(`📊 종목 수: ${data.day_bal_rt.length}개`);
+        console.log(`🔄 연속조회: ${contYn === "Y" ? "있음" : "없음"}`);
+
+        if (data.return_code !== 0) {
+          throw new Error(data.return_msg || "API 오류가 발생했습니다");
+        }
+
+        return data;
+      } catch (error) {
+        console.error("❌ 일별잔고수익률 조회 오류:", error);
+        throw new Error(
+          error instanceof Error
+            ? error.message
+            : "일별잔고수익률 조회 중 오류가 발생했습니다"
+        );
+      }
     }),
 });
 
